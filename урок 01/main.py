@@ -138,13 +138,13 @@ def recognize(filename, features, graph):
 
     # мой код
 
-    end_tokens_distance = []
+    final_tokens = []
     print('Tokens reached the final node:')
     for token in active_tokens: # Перебираем токены и находим с наименьшим расстоянием
         if token.state.isFinal:
-            end_tokens_distance.append(token.dist)
+            final_tokens.append(token.dist)
             print_token(token)
-    str_out = f"Minimum distance={min(end_tokens_distance)} with word={next(token.state.word for token in active_tokens if token.dist == min(end_tokens_distance))}"
+    str_out = f"Minimum distance={min(final_tokens)} with word={next(token.state.word for token in active_tokens if token.dist == min(final_tokens))}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'w') as f: # записываем ответ в файл
         f.write(str_out)
