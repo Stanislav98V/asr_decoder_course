@@ -1,0 +1,1 @@
+Minimum distance=[ 0.4] with word=net1
