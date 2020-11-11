@@ -15,7 +15,7 @@ import FtrFile
 #########################################
 
 class State:
-    def __init__(self, ftr, idx):  # idx is for debug purposes
+    def __init__(self, ftr, idx): # idx is for debug purposes
         self.ftr = ftr
         self.word = None
         self.isFinal = False
@@ -35,11 +35,11 @@ def load_graph(rxfilename):
     startState = State(None, 0) # Создаём первый элемент графа
     graph = [startState, ] # Записываем его в Спиок узлов графа
     stateIdx = 1
-    for word, features in FtrFile.FtrDirectoryReader(rxfilename): # Получили имя и  значения
+    for word, features in FtrFile.FtrDirectoryReader(rxfilename): # Получили имя и значения
         prevState = startState
         for frame in range(features.nSamples):
             state = State(features.readvec(), stateIdx)
-            state.nextStates.append(state)  # add loop
+            state.nextStates.append(state) # add loop
             prevState.nextStates.append(state)
             prevState = state
             print_state(state)
@@ -121,10 +121,10 @@ def recognize(filename, features, graph):
         current_frame_ftr = features.readvec()
         for token in active_tokens: # Перебираем активные токены
             for next_state_id in token.state.nextStatesIdxs: # Перебираем возможные пути. Я чутка изменил код, сделал naxeStatesIdxs  атрибутом класса State
-                newToken = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
-                newToken.dist += token.dist # Копируем расстояние в новый токен
-                newToken.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
-                next_tokens.append(newToken)
+                new_token = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
+                new_token.dist += token.dist # Копируем расстояние в новый токен
+                new_token.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
+                next_tokens.append(new_token)
 
         active_tokens = next_tokens
         next_tokens = []
@@ -143,6 +143,7 @@ def recognize(filename, features, graph):
     for token in active_tokens: # Перебираем токены и находим с наименьшим расстоянием
         if token.state.isFinal:
             print_token(token)
+            print(token.state.word)
             final_tokens.append(token)
     best_token = final_tokens[np.argmin([i.dist for i in final_tokens])]
     str_out = f"Minimum distance={best_token.dist} with word={best_token.state.word}"
