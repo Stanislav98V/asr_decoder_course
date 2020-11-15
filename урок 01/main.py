@@ -15,13 +15,15 @@ import FtrFile
 #########################################
 
 class State:
+    best_token=None
     def __init__(self, ftr, idx): # idx is for debug purposes
         self.ftr = ftr
         self.word = None
         self.isFinal = False
         self.nextStates = []
         self.idx = idx
-        self.nextStatesIdxs=[]
+        self.nextStatesIdxs = []
+
 
 
 def print_state(state):
@@ -82,6 +84,8 @@ class Token:
         self.state = state
         self.dist = dist
         self.sentence = sentence
+        self.is_alive = None
+
 
 
 def print_token(token):
@@ -106,7 +110,26 @@ def print_tokens(tokens):
 def compute_distance(current_frame_ftr, ftr):
     return ((current_frame_ftr - ftr) ** 2) ** 0.5 # Считаем расстояние евклидовой метрикой
 
+
 # не мой код
+
+def state_prune(tokes):
+    length_graph = len(graph)
+    for graph_idx in range(length_graph):
+        tokens_graph_idx = [i for i in tokes if i.state.idx == graph_idx]
+        if len(tokens_graph_idx) > 0:
+            best_token_graph_idx = tokens_graph_idx[np.argmin([i.dist for i in tokens_graph_idx if i.is_alive != False])]
+            State.best_token = best_token_graph_idx
+            for token in tokens_graph_idx:
+                if token == best_token_graph_idx:
+                    token.is_alive = True
+                else:
+                    token.is_alive = False
+    return tokes
+
+
+
+
 
 def recognize(filename, features, graph):
     print("Recognizing file '{}', samples={}".format(filename,
@@ -120,33 +143,22 @@ def recognize(filename, features, graph):
     for frame in range(features.nSamples): # Перебираем все векторы записи
         current_frame_ftr = features.readvec()
         for token in active_tokens: # Перебираем активные токены
-            for next_state_id in token.state.nextStatesIdxs: # Перебираем возможные пути. Я чутка изменил код, сделал naxeStatesIdxs  атрибутом класса State
-                new_token = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
-                new_token.dist += token.dist # Копируем расстояние в новый токен
-                new_token.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
-                next_tokens.append(new_token)
-
+            if token.is_alive != False:
+                for next_state_id in token.state.nextStatesIdxs: # Перебираем возможные пути. Я чутка изменил код, сделал naxeStatesIdxs  атрибутом класса State
+                    new_token = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
+                    new_token.dist += token.dist # Копируем расстояние в новый токен
+                    new_token.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
+                    next_tokens.append(new_token)
+        next_tokens = state_prune(next_tokens)
         active_tokens = next_tokens
         next_tokens = []
 
 
-
     # MAGIC
     # не мой код
-
     print_tokens(active_tokens) # Выводим активынй токен
-
     # мой код
-
-    final_tokens = []
-    print('Tokens reached the final node:')
-    for token in active_tokens: # Перебираем токены и находим с наименьшим расстоянием
-        if token.state.isFinal:
-            print_token(token)
-            print(token.state.word)
-            final_tokens.append(token)
-    best_token = final_tokens[np.argmin([i.dist for i in final_tokens])]
-    str_out = f"Minimum distance={best_token.dist} with word={best_token.state.word}"
+    str_out = f"Minimum distance={State.best_token.dist} with word={State.best_token.state.word} and is_alive={State.best_token.is_alive}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'w') as f: # записываем ответ в файл
         f.write(str_out)
