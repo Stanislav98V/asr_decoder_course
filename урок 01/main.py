@@ -108,7 +108,12 @@ def print_tokens(tokens):
 # мой код
 
 def compute_distance(current_frame_ftr, ftr):
-    return ((current_frame_ftr - ftr) ** 2) ** 0.5 # Считаем расстояние евклидовой метрикой
+    distan = 0
+    le = len(ftr)
+    for i in range(le):
+        distan += (current_frame_ftr[i] - ftr[i]) ** 2
+    distan = distan ** 0.5
+    return distan # Считаем расстояние евклидовой метрикой
 
 
 # не мой код
@@ -158,6 +163,9 @@ def recognize(filename, features, graph):
     # не мой код
     print_tokens(active_tokens) # Выводим активынй токен
     # мой код
+
+    State.best_token = active_tokens[np.argmin([i.dist for i in active_tokens])]
+
     str_out = f"Minimum distance={State.best_token.dist} with word={State.best_token.state.word} and is_alive={State.best_token.is_alive}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'w') as f: # записываем ответ в файл
