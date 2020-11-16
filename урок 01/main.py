@@ -166,9 +166,9 @@ def recognize(filename, features, graph):
 
     State.best_token = active_tokens[np.argmin([i.dist for i in active_tokens])]
 
-    str_out = f"Minimum distance={State.best_token.dist} with word={State.best_token.state.word} and is_alive={State.best_token.is_alive}"
+    str_out = f"Minimum distance={State.best_token.dist} with word={State.best_token.state.word} and is_alive={State.best_token.is_alive}. "
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
-    with open('OTV.txt', 'w') as f: # записываем ответ в файл
+    with open('OTV.txt', 'a') as f: # записываем ответ в файл
         f.write(str_out)
 
 
@@ -179,7 +179,8 @@ def recognize(filename, features, graph):
 if __name__ == "__main__":
     etalons = "ark,t:etalons_mfcc.txtftr" # Считываем данные из файла эталона
     records = "ark,t:record_mfcc.txtftr" # Считываем данные из файла запись
-
+    with open('OTV.txt', 'w') as f: # записываем ответ в файл
+        f.write('')
     graph = load_graph(etalons) # Создаём граф
     check_graph(graph) # Провека графа
     print_graph(graph) # Вывод графа
