@@ -158,15 +158,16 @@ def recognize(filename, features, graph):
         active_tokens = next_tokens
         next_tokens = []
 
-
+    final_best_tokens=[]
     # MAGIC
     # не мой код
     print_tokens(active_tokens) # Выводим активынй токен
     # мой код
-
-    State.best_token = active_tokens[np.argmin([i.dist for i in active_tokens])]
-
-    str_out = f"Minimum distance={State.best_token.dist} with word={State.best_token.state.word} and is_alive={State.best_token.is_alive}. "
+    for token in active_tokens:
+        if token.is_alive == True and token.state.isFinal == True:
+            final_best_tokens += [token]
+    State.best_token = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
+    str_out = f"Minimum distance={State.best_token.dist} with isFinal={State.best_token.state.isFinal} and is_alive={State.best_token.is_alive}. "
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'a') as f: # записываем ответ в файл
         f.write(str_out)
