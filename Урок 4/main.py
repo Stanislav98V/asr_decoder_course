@@ -54,15 +54,19 @@ def load_graph(rxfilename):
             state.isFinal = True
         print_state(graph[0])
 
-    ln = len(graph)
-    x = 0
-    for p in graph:
-        x += 1
-        if p.idx != 0:
-            if ln - p.idx > 1:
-                for y in graph:
-                    if y.idx == x + 1:
-                        p.nextStates.append(y)
+    # Начало кода к 4 уроку
+
+    len_graph = len(graph)
+    counter = 0
+    for token_i in graph:
+        counter += 1
+        if token_i.idx != 0:
+            if len_graph - token_i.idx > 1:
+                for token_i_i in graph:
+                    if token_i_i.idx == counter + 1:
+                        token_i.nextStates.append(token_i_i)
+
+    # Конец кода к 4 уроку
 
     return graph # Создаём граф
 
