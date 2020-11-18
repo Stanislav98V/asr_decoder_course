@@ -58,13 +58,22 @@ def load_graph(rxfilename):
 
     len_graph = len(graph)
     counter = 0
+    graph_word_idx = []
+    for token in graph:
+        if token.word != None:
+            graph_word_idx += [token]
     for token_i in graph:
         counter += 1
-        if token_i.idx != 0:
-            if len_graph - token_i.idx > 1:
+        counter_i = 0
+        if token_i.idx != 0 and token_i.word == None:
+            for token_i_i in graph_word_idx:
+                if token_i_i.idx == token_i.idx + 1:
+                    counter_i += 1
+            if len_graph - token_i.idx > 1 and counter_i == 0:
                 for token_i_i in graph:
                     if token_i_i.idx == counter + 1:
                         token_i.nextStates.append(token_i_i)
+        counter_i = 0
 
     # Конец кода к 4 уроку
 
@@ -184,7 +193,8 @@ def recognize(filename, features, graph):
         if token.is_alive == True and token.state.isFinal == True:
             final_best_tokens += [token]
     State.best_token = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
-    str_out = f"Minimum distance={State.best_token.dist} with isFinal={State.best_token.state.isFinal} and is_alive={State.best_token.is_alive}. "
+    str_out = f"Minimum distance={State.best_token.dist} with isFinal={State.best_token.state.isFinal} " \
+              f"and is_alive={State.best_token.is_alive} and word={State.best_token.state.word}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'a') as f: # записываем ответ в файл
         f.write(str_out)
