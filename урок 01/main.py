@@ -155,14 +155,13 @@ def state_prune(tokes):
                 or token.state.best_token.dist > token.dist:
             if token.state.best_token != None:
                 token.state.best_token.is_alive = False
-            token.is_alive = True
             token.state.best_token = token
         else:
             token.is_alive = False
 
-    for token in graph:
-        token.best_token = None
-        
+    for state in graph:
+        state.best_token = None
+
     return tokes
 
 
@@ -197,7 +196,7 @@ def recognize(filename, features, graph):
     # мой код
 
     for token in active_tokens:
-        if token.is_alive == True and token.state.isFinal == True:
+        if token.is_alive != False and token.state.isFinal == True:
             final_best_tokens += [token]
     best_token_ol = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
     str_out = f"Minimum distance={best_token_ol.dist} with isFinal={best_token_ol.state.isFinal} " \
