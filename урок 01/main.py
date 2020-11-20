@@ -15,7 +15,6 @@ import FtrFile
 #########################################
 
 class State:
-    best_token=None
     def __init__(self, ftr, idx): # idx is for debug purposes
         self.ftr = ftr
         self.word = None
@@ -23,7 +22,7 @@ class State:
         self.nextStates = []
         self.idx = idx
         self.nextStatesIdxs = []
-        self.b_t = None
+        self.best_token = None
 
 
 
@@ -57,33 +56,33 @@ def load_graph(rxfilename):
 
     # Начало кода к 4 уроку
 
-    len_graph = len(graph)
-    counter = 0
-    graph_word_idx = []
-    for token in graph:
-        if token.word != None:
-            graph_word_idx += [token]
-    for token_i in graph:
-        counter += 1
-        counter_i = 0
-        counter_i_i = 0
-        if token_i.idx != 0 and token_i.word == None:
-            for token_i_i in graph_word_idx:
-                if token_i_i.idx == token_i.idx + 1:
-                    counter_i += 1
-                    counter_i_i +=1
-                elif token_i_i.idx == token_i.idx + 2:
-                    counter_i_i += 1
-            if len_graph - token_i.idx > 1 and counter_i == 0:
-                for token_i_i in graph:
-                    if token_i_i.idx == counter + 1:
-                        token_i.nextStates.append(token_i_i)
-            if len_graph - token_i.idx > 1 and counter_i_i == 0:
-                for token_i_i in graph:
-                    if token_i_i.idx == counter + 2:
-                        token_i.nextStates.append(token_i_i)
-        counter_i = 0
-        counter_i_i = 0
+    # len_graph = len(graph)
+    # counter = 0
+    # graph_word_idx = []
+    # for token in graph:
+    #     if token.word != None:
+    #         graph_word_idx += [token]
+    # for token_i in graph:
+    #     counter += 1
+    #     counter_i = 0
+    #     counter_i_i = 0
+    #     if token_i.idx != 0 and token_i.word == None:
+    #         for token_i_i in graph_word_idx:
+    #             if token_i_i.idx == token_i.idx + 1:
+    #                 counter_i += 1
+    #                 counter_i_i +=1
+    #             elif token_i_i.idx == token_i.idx + 2:
+    #                 counter_i_i += 1
+    #         if len_graph - token_i.idx > 1 and counter_i == 0:
+    #             for token_i_i in graph:
+    #                 if token_i_i.idx == counter + 1:
+    #                     token_i.nextStates.append(token_i_i)
+    #         if len_graph - token_i.idx > 1 and counter_i_i == 0:
+    #             for token_i_i in graph:
+    #                 if token_i_i.idx == counter + 2:
+    #                     token_i.nextStates.append(token_i_i)
+    #     counter_i = 0
+    #     counter_i_i = 0
 
     # Конец кода к 4 уроку
 
@@ -121,7 +120,7 @@ class Token:
         self.dist = dist
         self.sentence = sentence
         self.is_alive = None
-        self.frame = None
+
 
 
 
@@ -150,14 +149,12 @@ def compute_distance(current_frame_ftr, ftr):
 
 # не мой код
 
-def state_prune(tokes, frame):
+def state_prune(tokes):
     for token in tokes:
-        token.frame = frame
-        if graph[token.state.idx].b_t == None \
-                or graph[token.state.idx].b_t.dist > token.dist \
-                or graph[token.state.idx].b_t.frame != frame:
+        if token.state.best_token == None \
+                or token.state.best_token.dist > token.dist:
             token.is_alive = True
-            graph[token.state.idx].b_t = token
+            token.state.best_token = token
         else:
             token.is_alive = False
     return tokes
@@ -183,8 +180,10 @@ def recognize(filename, features, graph):
                     new_token.dist += token.dist # Копируем расстояние в новый токен
                     new_token.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
                     next_tokens.append(new_token)
-        next_tokens = state_prune(next_tokens, frame + 1)
+        next_tokens = state_prune(next_tokens)
         active_tokens = next_tokens
+        for token in graph:
+            token.best_token = None
         next_tokens = []
 
     final_best_tokens=[]
@@ -192,12 +191,13 @@ def recognize(filename, features, graph):
     # не мой код
     print_tokens(active_tokens) # Выводим активынй токен
     # мой код
+
     for token in active_tokens:
         if token.is_alive == True and token.state.isFinal == True:
             final_best_tokens += [token]
-    State.best_token = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
-    str_out = f"Minimum distance={State.best_token.dist} with isFinal={State.best_token.state.isFinal} " \
-              f"and is_alive={State.best_token.is_alive} and word={State.best_token.state.word}"
+    best_token_ol = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
+    str_out = f"Minimum distance={best_token_ol.dist} with isFinal={best_token_ol.state.isFinal} " \
+              f"and is_alive={best_token_ol.is_alive} and word={best_token_ol.state.word}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'a') as f: # записываем ответ в файл
         f.write(str_out)
