@@ -153,10 +153,16 @@ def state_prune(tokes):
     for token in tokes:
         if token.state.best_token == None \
                 or token.state.best_token.dist > token.dist:
+            if token.state.best_token != None:
+                token.state.best_token.is_alive = False
             token.is_alive = True
             token.state.best_token = token
         else:
             token.is_alive = False
+
+    for token in graph:
+        token.best_token = None
+        
     return tokes
 
 
@@ -182,8 +188,6 @@ def recognize(filename, features, graph):
                     next_tokens.append(new_token)
         next_tokens = state_prune(next_tokens)
         active_tokens = next_tokens
-        for token in graph:
-            token.best_token = None
         next_tokens = []
 
     final_best_tokens=[]
