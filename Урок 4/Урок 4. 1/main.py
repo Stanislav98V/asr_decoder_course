@@ -49,9 +49,11 @@ def load_graph(rxfilename):
             graph.append(state)
             num_graph = list(enumerate(graph))
             if num_graph[-1][0] > 2 and count > 1:
-                graph[num_graph[-3][0]].nextStates.append(state)
+                #graph[num_graph[-3][0]].nextStates.append(state)
+                num_graph[-3][1].nextStates.append(state)
             if num_graph[-1][0] > 2 and count > 2:
-                graph[num_graph[-4][0]].nextStates.append(state)
+                #graph[num_graph[-4][0]].nextStates.append(state)
+                num_graph[-4][1].nextStates.append(state)
             stateIdx += 1
             count += 1
         if state:
