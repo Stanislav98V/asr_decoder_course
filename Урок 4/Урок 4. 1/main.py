@@ -39,7 +39,6 @@ def load_graph(rxfilename):
     stateIdx = 1
     for word, features in FtrFile.FtrDirectoryReader(rxfilename): # Получили имя и значения
         prevState = startState
-        count = 0
         for frame in range(features.nSamples):
             state = State(features.readvec(), stateIdx) # Создаём стейт с индексом и значением
             state.nextStates.append(state) # add loop # Добавляем переход в себя
@@ -47,15 +46,11 @@ def load_graph(rxfilename):
             prevState = state # prevState тепер ссылается на текущий стейт
             print_state(state) # Добавляем стейту все нужные значения и выводим его
             graph.append(state)
-            num_graph = list(enumerate(graph))
-            if num_graph[-1][0] > 2 and count > 1:
-                #graph[num_graph[-3][0]].nextStates.append(state)
-                num_graph[-3][1].nextStates.append(state)
-            if num_graph[-1][0] > 2 and count > 2:
-                #graph[num_graph[-4][0]].nextStates.append(state)
-                num_graph[-4][1].nextStates.append(state)
+            if frame >= 2 :
+                graph[stateIdx - 2].nextStates.append(state)
+            if frame >= 3:
+                graph[stateIdx - 3].nextStates.append(state)
             stateIdx += 1
-            count += 1
         if state:
             state.word = word
             state.isFinal = True
