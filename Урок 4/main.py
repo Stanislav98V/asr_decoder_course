@@ -15,7 +15,6 @@ import FtrFile
 #########################################
 
 class State:
-    best_token=None
     def __init__(self, ftr, idx): # idx is for debug purposes
         self.ftr = ftr
         self.word = None
@@ -23,13 +22,12 @@ class State:
         self.nextStates = []
         self.idx = idx
         self.nextStatesIdxs = []
+        self.best_token = None
 
 
 
 def print_state(state):
     nextStatesIdxs = [s.idx for s in state.nextStates]
-    # if len(nextStatesIdxs) > 1 and :
-    #     nextStatesIdxs += [state.idx + 2]
     state.nextStatesIdxs=nextStatesIdxs
     print("State: idx={} word={} isFinal={} nextStatesIdxs={} ftr={} ".format(
         state.idx, state.word, state.isFinal, state.nextStatesIdxs, state.ftr))
@@ -40,14 +38,22 @@ def load_graph(rxfilename):
     graph = [startState, ] # Записываем его в Спиок узлов графа
     stateIdx = 1
     for word, features in FtrFile.FtrDirectoryReader(rxfilename): # Получили имя и значения
+        count = 0
         prevState = startState
         for frame in range(features.nSamples):
-            state = State(features.readvec(), stateIdx)
-            state.nextStates.append(state) # add loop
-            prevState.nextStates.append(state)
-            prevState = state
-            print_state(state)
+            state = State(features.readvec(), stateIdx) # Создаём стейт с индексом и значением
+            state.nextStates.append(state) # add loop # Добавляем переход в себя
+            prevState.nextStates.append(state) # Добавляем переход в иекущий стейт для prevState он равен прошлому стейту
+            prevState = state # prevState тепер ссылается на текущий стейт
+            print_state(state) # Добавляем стейту все нужные значения и выводим его
             graph.append(state)
+            #
+            if count > 1:
+                last_state = [i for i in graph if i.idx == count - 1] # Ищем стейт расположенный через один назад и ссылкаемся на него
+                if last_state[0].word == None: # Проверяем не последний ли это кадр эталона
+                    last_state[0].nextStates.append(state) # Добавляем в стейт переход через один вперед
+            count = state.idx
+            #
             stateIdx += 1
         if state:
             state.word = word
@@ -56,24 +62,33 @@ def load_graph(rxfilename):
 
     # Начало кода к 4 уроку
 
-    len_graph = len(graph)
-    counter = 0
-    graph_word_idx = []
-    for token in graph:
-        if token.word != None:
-            graph_word_idx += [token]
-    for token_i in graph:
-        counter += 1
-        counter_i = 0
-        if token_i.idx != 0 and token_i.word == None:
-            for token_i_i in graph_word_idx:
-                if token_i_i.idx == token_i.idx + 1:
-                    counter_i += 1
-            if len_graph - token_i.idx > 1 and counter_i == 0:
-                for token_i_i in graph:
-                    if token_i_i.idx == counter + 1:
-                        token_i.nextStates.append(token_i_i)
-        counter_i = 0
+    # len_graph = len(graph)
+    # counter = 0
+    # graph_word_idx = []
+    # for token in graph:
+    #     if token.word != None:
+    #         graph_word_idx += [token]
+    # for token_i in graph:
+    #     counter += 1
+    #     counter_i = 0
+    #     counter_i_i = 0
+    #     if token_i.idx != 0 and token_i.word == None:
+    #         for token_i_i in graph_word_idx:
+    #             if token_i_i.idx == token_i.idx + 1:
+    #                 counter_i += 1
+    #                 counter_i_i +=1
+    #             elif token_i_i.idx == token_i.idx + 2:
+    #                 counter_i_i += 1
+    #         if len_graph - token_i.idx > 1 and counter_i == 0:
+    #             for token_i_i in graph:
+    #                 if token_i_i.idx == counter + 1:
+    #                     token_i.nextStates.append(token_i_i)
+    #         if len_graph - token_i.idx > 1 and counter_i_i == 0:
+    #             for token_i_i in graph:
+    #                 if token_i_i.idx == counter + 2:
+    #                     token_i.nextStates.append(token_i_i)
+    #     counter_i = 0
+    #     counter_i_i = 0
 
     # Конец кода к 4 уроку
 
@@ -114,6 +129,7 @@ class Token:
 
 
 
+
 def print_token(token):
     print("Token on state #{} dist={} isFinal={} sentence={}".format(token.state.idx,
                                                           token.dist,
@@ -134,28 +150,24 @@ def print_tokens(tokens):
 # мой код
 
 def compute_distance(current_frame_ftr, ftr):
-    distan = 0
-    le = len(ftr)
-    for i in range(le):
-        distan += (current_frame_ftr[i] - ftr[i]) ** 2
-    distan = distan ** 0.5
-    return distan # Считаем расстояние евклидовой метрикой
+    return sum((current_frame_ftr - ftr) **2 ) ** 0.5 # Считаем расстояние евклидовой метрикой
 
 
 # не мой код
 
 def state_prune(tokes):
-    length_graph = len(graph)
-    for graph_idx in range(length_graph):
-        tokens_graph_idx = [i for i in tokes if i.state.idx == graph_idx]
-        if len(tokens_graph_idx) > 0:
-            best_token_graph_idx = tokens_graph_idx[np.argmin([i.dist for i in tokens_graph_idx if i.is_alive != False])]
-            State.best_token = best_token_graph_idx
-            for token in tokens_graph_idx:
-                if token == best_token_graph_idx:
-                    token.is_alive = True
-                else:
-                    token.is_alive = False
+    for token in tokes:
+        if token.state.best_token == None \
+                or token.state.best_token.dist > token.dist:
+            if token.state.best_token != None:
+                token.state.best_token.is_alive = False
+            token.state.best_token = token
+        else:
+            token.is_alive = False
+
+    for state in graph:
+        state.best_token = None
+
     return tokes
 
 
@@ -167,7 +179,6 @@ def recognize(filename, features, graph):
                                                      features.nSamples))
 
 # мой код
-
     start_state = graph[0]
     active_tokens = [Token(start_state), ] # Создаём токен
     next_tokens = []
@@ -189,12 +200,13 @@ def recognize(filename, features, graph):
     # не мой код
     print_tokens(active_tokens) # Выводим активынй токен
     # мой код
+
     for token in active_tokens:
-        if token.is_alive == True and token.state.isFinal == True:
+        if token.is_alive != False and token.state.isFinal == True:
             final_best_tokens += [token]
-    State.best_token = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
-    str_out = f"Minimum distance={State.best_token.dist} with isFinal={State.best_token.state.isFinal} " \
-              f"and is_alive={State.best_token.is_alive} and word={State.best_token.state.word}"
+    best_token_ol = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
+    str_out = f"Minimum distance={best_token_ol.dist} with isFinal={best_token_ol.state.isFinal} " \
+              f"and is_alive={best_token_ol.is_alive} and word={best_token_ol.state.word}"
     print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
     with open('OTV.txt', 'a') as f: # записываем ответ в файл
         f.write(str_out)
