@@ -49,45 +49,14 @@ def load_graph(rxfilename):
             graph.append(state)
             if frame >= 2 :
                 graph[stateIdx - 2].nextStates.append(state)
-            # if frame >= 3:
-            #     graph[stateIdx - 3].nextStates.append(state)
+            if frame >= 3:
+                graph[stateIdx - 3].nextStates.append(state)
             stateIdx += 1
         if state:
             state.word = word
             state.isFinal = True
         print_state(graph[0])
 
-    # Начало кода к 4 уроку
-
-    # len_graph = len(graph)
-    # counter = 0
-    # graph_word_idx = []
-    # for token in graph:
-    #     if token.word != None:
-    #         graph_word_idx += [token]
-    # for token_i in graph:
-    #     counter += 1
-    #     counter_i = 0
-    #     counter_i_i = 0
-    #     if token_i.idx != 0 and token_i.word == None:
-    #         for token_i_i in graph_word_idx:
-    #             if token_i_i.idx == token_i.idx + 1:
-    #                 counter_i += 1
-    #                 counter_i_i +=1
-    #             elif token_i_i.idx == token_i.idx + 2:
-    #                 counter_i_i += 1
-    #         if len_graph - token_i.idx > 1 and counter_i == 0:
-    #             for token_i_i in graph:
-    #                 if token_i_i.idx == counter + 1:
-    #                     token_i.nextStates.append(token_i_i)
-    #         if len_graph - token_i.idx > 1 and counter_i_i == 0:
-    #             for token_i_i in graph:
-    #                 if token_i_i.idx == counter + 2:
-    #                     token_i.nextStates.append(token_i_i)
-    #     counter_i = 0
-    #     counter_i_i = 0
-
-    # Конец кода к 4 уроку
 
     return graph # Создаём граф
 
@@ -168,7 +137,7 @@ def state_prunning(tokens):
 
 
 def beam_prunning(tokens):
-    thr_common = 2
+    thr_common = 26
     for token in tokens:
         if token.state.best_token != None:
             if token.state.best_token.dist + thr_common < token.dist:
@@ -200,7 +169,8 @@ def recognize(filename, features, graph):
         next_tokens = state_prunning(next_tokens)
         active_tokens = next_tokens
         next_tokens = []
-
+    for state in graph:
+        state.best_token = None
     final_best_tokens=[]
     # MAGIC
     # не мой код
@@ -210,7 +180,7 @@ def recognize(filename, features, graph):
     for token in active_tokens:
         if token.is_alive != False and token.state.isFinal == True:
             final_best_tokens += [token]
-    if len(final_best_tokens):
+    if len(final_best_tokens) > 0:
         best_token_ol = final_best_tokens[np.argmin([i.dist for i in final_best_tokens])]
         str_out = f"Minimum distance={best_token_ol.dist} with isFinal={best_token_ol.state.isFinal} " \
                 f"and is_alive={best_token_ol.is_alive} and word={best_token_ol.state.word}"
@@ -219,6 +189,8 @@ def recognize(filename, features, graph):
             f.write(str_out)
     else:
         print('<no-final-token>')
+        with open('OTV.txt', 'a') as f: # записываем ответ в файл
+            f.write('<no-final-token>')
 
 #########################################
 # Main
