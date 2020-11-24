@@ -122,32 +122,31 @@ def compute_distance(current_frame_ftr, ftr):
 # не мой код
 
 def state_prunning(tokens):
+    for token in tokens:
+        if token.state.best_token == None \
+                or token.state.best_token.dist > token.dist:
+            if token.state.best_token != None:
+                token.state.best_token.is_alive = False
+            token.state.best_token = token
+        else:
+            token.is_alive = False
     for state in graph:
         state.best_token = None
+    return tokens
+
+
+def beam_prunning(tokens, thr_common):
+    best_token = tokens[np.argmin([i.dist for i in tokens if i.is_alive != False])]
     for token in tokens:
         if token.is_alive != False:
-            if token.state.best_token == None \
-                    or token.state.best_token.dist > token.dist:
-                if token.state.best_token != None:
-                    token.state.best_token.is_alive = False
-                token.state.best_token = token
-            else:
-                token.is_alive = False
-    return tokens
-
-
-def beam_prunning(tokens):
-    thr_common = 26
-    for token in tokens:
-        if token.state.best_token != None:
-            if token.state.best_token.dist + thr_common < token.dist:
+            if best_token.dist + thr_common < token.dist:
                 token.is_alive = False
     return tokens
 
 
 
 
-def recognize(filename, features, graph):
+def recognize(filename, features, graph, thr_common):
     print("Recognizing file '{}', samples={}".format(filename,
                                                      features.nSamples))
 
@@ -164,13 +163,10 @@ def recognize(filename, features, graph):
                     new_token.dist += token.dist # Копируем расстояние в новый токен
                     new_token.dist += compute_distance(current_frame_ftr, graph[next_state_id].ftr) # Считаем расстояния
                     next_tokens.append(new_token)
-        if frame > 0:
-            next_tokens = beam_prunning(next_tokens)
         next_tokens = state_prunning(next_tokens)
+        next_tokens = beam_prunning(next_tokens, thr_common)
         active_tokens = next_tokens
         next_tokens = []
-    for state in graph:
-        state.best_token = None
     final_best_tokens=[]
     # MAGIC
     # не мой код
@@ -186,17 +182,18 @@ def recognize(filename, features, graph):
                 f"and is_alive={best_token_ol.is_alive} and word={best_token_ol.state.word}"
         print(str_out) # выводим ответ с минимальным расстоянием и названием эталона
         with open('OTV.txt', 'a') as f: # записываем ответ в файл
-            f.write(str_out)
+            f.write(str_out + '\n')
     else:
         print('<no-final-token>')
         with open('OTV.txt', 'a') as f: # записываем ответ в файл
-            f.write('<no-final-token>')
+            f.write('<no-final-token>\n')
 
 #########################################
 # Main
 #########################################
 
 if __name__ == "__main__":
+    thr_common = 140
     etalons = "ark,t:etalons_mfcc.txtftr" # Считываем данные из файла эталона
     records = "ark,t:record_mfcc.txtftr" # Считываем данные из файла запись
     with open('OTV.txt', 'w') as f: # записываем ответ в файл
@@ -206,7 +203,7 @@ if __name__ == "__main__":
     print_graph(graph) # Вывод графа
 
     for filename, features in FtrFile.FtrDirectoryReader(records):
-        recognize(filename, features, graph) # Берём читалку и имя файла из записи и засовываем в recognize
+        recognize(filename, features, graph, thr_common) # Берём читалку и имя файла из записи и засовываем в recognize
         #cProfile.run('recognize(filename, features, graph)')
 
     print("--- %s seconds ---" % (time.time() - start_time))
