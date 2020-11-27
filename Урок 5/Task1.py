@@ -162,8 +162,7 @@ def recognize(filename, features, graph, thr_common):
                 for next_state_id in token.state.nextStatesIdxs: # Перебираем возможные пути. Я чутка изменил код, сделал naxeStatesIdxs  атрибутом класса State
                     new_token = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
                     new_token.dist += token.dist # Копируем расстояние в новый токен
-                    lv = AcoModels.AcoModel.dist(graph[next_state_id].model, current_frame_ftr) # Считаем расстояния
-                    new_token.dist += lv
+                    new_token.dist += AcoModels.AcoModel.dist(graph[next_state_id].model, current_frame_ftr) # Считаем расстояния
                     next_tokens.append(new_token)
         next_tokens = state_prunning(next_tokens)
         next_tokens = beam_prunning(next_tokens, thr_common)
