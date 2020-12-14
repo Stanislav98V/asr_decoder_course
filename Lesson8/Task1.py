@@ -71,6 +71,19 @@ def beam_prunning(tokens, thr_common):
                 token.is_alive = False
     return tokens
 
+def count_token(next_state_id, token, current_frame_ftr, wd_add):
+    new_token = Token(graph[next_state_id])  # Создаём новый токен в указанном узле
+    new_token.dist += token.dist  # Копируем расстояние в новый токен
+    if token.sentence != new_token.sentence:
+        new_token.sentence = token.sentence
+    if new_token.state.isFinal == True:
+        if token.state != new_token.state:
+            new_token.dist += wd_add
+            new_token.sentence += new_token.state.word + ' '
+    new_token.dist += AcoModels3.AcoModel.dist(graph[next_state_id].model,
+                                               current_frame_ftr)  # Считаем расстояния
+    return new_token
+
 
 def recognize(filename, features, graph, thr_common):
     print("Recognizing file '{}', samples={}".format(filename,
@@ -88,20 +101,12 @@ def recognize(filename, features, graph, thr_common):
             if token.is_alive != False:
                 for next_state_id in token.state.nextStatesIdxs: # Перебираем возможные пути. Я чутка изменил код, сделал naxeStatesIdxs  атрибутом класса State
                     if next_state_id == 0:
-                        for id_start_state in start_state.nextStatesIdxs:
-                            token.state.nextStatesIdxs.append(id_start_state)
-                        continue
-                    new_token = Token(graph[next_state_id]) # Создаём новый токен в указанном узле
-                    new_token.dist += token.dist # Копируем расстояние в новый токен
-                    if token.sentence != new_token.sentence:
-                        new_token.sentence = token.sentence
-                    if new_token.state.isFinal == True:
-                        if token.state != new_token.state:
-                            new_token.dist += wd_add
-                            new_token.sentence += new_token.state.word + ' '
-                    new_token.dist += AcoModels3.AcoModel.dist(graph[next_state_id].model,
-                                                               current_frame_ftr)  # Считаем расстояния
-                    next_tokens.append(new_token)
+                        for next_state_id_two in start_state.nextStatesIdxs:
+                            new_token = count_token(next_state_id_two, token, current_frame_ftr, wd_add)
+                            next_tokens.append(new_token)
+                    else:
+                        new_token = count_token(next_state_id, token, current_frame_ftr, wd_add)
+                        next_tokens.append(new_token)
         next_tokens = state_prunning(next_tokens)
         #next_tokens = beam_prunning(next_tokens, thr_common)
         active_tokens = next_tokens
